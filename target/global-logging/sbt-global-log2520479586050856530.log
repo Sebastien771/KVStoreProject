@@ -1,0 +1,11 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(store.get("key1") // Doit retourner Left(StoreError.KeyNotFound("key1")), Some(f5b6acda-c025-463f-bf3b-ab9736a115e6), Some(CommandSource(console0)))[0m
+[0m[[0m[31merror[0m] [0m[0mExpected ID character[0m
+[0m[[0m[31merror[0m] [0m[0mNot a valid command: store (similar: lastGrep, last-grep, set)[0m
+[0m[[0m[31merror[0m] [0m[0mExpected project ID[0m
+[0m[[0m[31merror[0m] [0m[0mExpected configuration[0m
+[0m[[0m[31merror[0m] [0m[0mExpected ':'[0m
+[0m[[0m[31merror[0m] [0m[0mExpected key[0m
+[0m[[0m[31merror[0m] [0m[0mNot a valid key: store (similar: history, streams, sources)[0m
+[0m[[0m[31merror[0m] [0m[0mstore.get("key1") // Doit retourner Left(StoreError.KeyNotFound("key1"))[0m
+[0m[[0m[31merror[0m] [0m[0m     ^[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(shell, None, None)[0m
