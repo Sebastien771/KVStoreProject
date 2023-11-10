@@ -1,6 +1,10 @@
 // Importation des classes nécessaires pour la manipulation des dates et des collections en Scala
+import java.nio.file.{Files, Paths}
 import java.time.LocalDateTime
 import scala.collection.mutable.TreeMap
+import scala.util.{Failure, Success, Try}
+
+
 
 // Key et Value sont des chaînes de caractères
 type Key = String
@@ -18,7 +22,9 @@ case class Record(
 // Énumération StoreError définissant les erreurs possibles qui peuvent survenir dans le store
 enum StoreError:
   case KeyNotFound(key: Key) // Une erreur indiquant qu'une clé donnée n'a pas été trouvée
-
+  case KeyAlreadyDeleted(key: Key)
+  case KeyDeleted(key: Key)
+  case LogWriteError(message: String)
 // Trait Store décrivant les opérations que doit fournir un store de clés-valeurs
 trait Store:
   def get(key: Key): Either[StoreError, Value] // Récupère la valeur associée à une clé
@@ -30,34 +36,88 @@ trait Store:
 
 
 // Implémentation concrète de Store utilisant la mémoire vive comme support de stockage
-class MemoryStore extends Store:
-  private val data: TreeMap[Key, Record] = TreeMap.empty // Un TreeMap pour stocker les enregistrements. Les clés y sont triées.
+class MemoryStore(commitLogPath: String, memtable: Memtable) extends Store:
 
+  // Initialisation du store
+  init()
+
+  private def init(): Unit = {
+    // Vérifier si le fichier de commit log existe
+    val path = Paths.get(commitLogPath)
+    if (Files.exists(path)) {
+      // Charger les données du commit log dans la memtable
+      loadCommitLogIntoMemtable()
+    } else {
+      // Créer un nouveau fichier de commit log
+      Files.createFile(path)
+      // Initialiser une nouvelle memtable si nécessaire
+    }
+  }
+
+  private def loadCommitLogIntoMemtable(): Unit = {
+    // Implémenter la logique de lecture du commit log et de chargement dans la memtable
+    val commitLog = new FileCommitLog(commitLogPath)
+    commitLog.readAll() match {
+      case Success(records) =>
+        records.foreach(record => {
+          if (!record.deleted) {
+            memtable.put(record.key, record.value)
+          }
+        })
+      case Failure(exception) =>
+        throw new IllegalStateException("Failed to load commit log", exception)
+    }
+  }
+
+  private val commitLog = new FileCommitLog(commitLogPath)
 
   // Implémentation de la méthode get pour récupérer la valeur associée à une clé
   override def get(key: Key): Either[StoreError, Value] =
-    data.get(key).toRight(StoreError.KeyNotFound(key)).map(_.value) // Renvoie la valeur ou une erreur si la clé n'existe pas
+    memtable.get(key) // Renvoie la valeur ou une erreur si la clé n'existe pas
 
   // Implémentation de la méthode put pour ajouter ou mettre à jour une clé avec une valeur
   override def put(key: Key, value: Value): Either[StoreError, Unit] = Right {
     val record = Record(key, value, LocalDateTime.now, deleted = false) // Création d'un nouvel enregistrement
-    data.update(key, record) // Mise à jour du TreeMap avec la nouvelle clé et l'enregistrement
+    commitLog.add(record) match {
+      case Success(_) =>
+        memtable.put(key, value)
+        Right(())
+      case Failure(key) =>
+        Left(StoreError.KeyNotFound("la clé"+key+"est introuvable")) // You might need to add this case to StoreError
+    }// Mise à jour du TreeMap avec la nouvelle clé et l'enregistrement
   }
 
   // Implémentation de la méthode delete pour marquer un enregistrement comme supprimé
-  override def delete(key: Key): Either[StoreError, Unit] =
-    data.get(key) match
-      case Some(record) => Right(data.update(key, record.copy(deleted = true))) // Marque l'enregistrement comme supprimé
-      case None => Left(StoreError.KeyNotFound(key)) // Renvoie une erreur si la clé n'existe pas
+  override def delete(key: Key): Either[StoreError, Unit] = {
+    memtable.get(key) match {
+      case Right(value) =>
+        // If the key exists, create a deletion Record and attempt to add it to the commit log
+        val deletionRecord = Record(key, null, LocalDateTime.now, deleted = true)
+        Try(commitLog.add(deletionRecord)) match {
+          case Success(_) =>
+            // If the commit log is successfully updated, delete the key from the memtable
+            memtable.delete(key) // Assuming delete here only needs the key
+          case Failure(exception) =>
+            // If there is a failure writing to the commit log, return an error
+            Left(StoreError.LogWriteError(exception.getMessage))
+        }
+      case Left(StoreError.KeyNotFound(_)) =>
+        // If the key is not found, return an error indicating it doesn't exist
+        Left(StoreError.KeyNotFound(key))
+      case Left(error) =>
+        // If there is a different error from the memtable, return that error
+        Left(error)
+    }
+  }
 
   // Implémentation de la méthode scan pour obtenir un itérateur sur tous les enregistrements
   override def scan(): Either[StoreError, Iterator[Record]] =
-    Right(data.values.iterator) // Retourne un itérateur sur les valeurs du TreeMap
+    memtable.scan() // Retourne un itérateur sur les valeurs du TreeMap
 
   // Implémentation de la méthode getFrom pour obtenir un itérateur à partir d'une clé spécifique
   override def getFrom(key: Key): Either[StoreError, Iterator[Record]] =
-    Right(data.from(key).values.iterator) // Retourne un itérateur à partir de la clé spécifiée
+    memtable.getFrom(key) // Retourne un itérateur à partir de la clé spécifiée
 
   // Implémentation de la méthode getPrefix pour obtenir un itérateur sur les enregistrements avec un préfixe commun
   override def getPrefix(prefix: String): Either[StoreError, Iterator[Record]] =
-    Right(data.iterator.filter(_._1.startsWith(prefix)).map(_._2)) // Filtre les enregistrements par préfixe
+    memtable.getPrefix(prefix) // Filtre les enregistrements par préfixe

@@ -5,7 +5,20 @@ import scala.util.Try
 
 //définition d'un objet scala, 'Utils' qui contiendra des fonctions utilitaires
 object Utils {
+  // Déclaration d'une classe de cas `Order` qui représente une commande avec des champs pour l'ID, le client, le timestamp, le produit, et le prix.
+  
 
+  // Fonction qui transforme une ligne de texte CSV en un objet Order.
+  def line2order(line: String): Order = {
+    val fields = line.split(",") // Divise la ligne en plusieurs champs en utilisant la virgule comme séparateur.
+    Order(                        // Crée un nouvel objet Order avec les champs obtenus.
+      id = fields(0),
+      clientId = fields(1),
+      timestamp = LocalDateTime.parse(fields(2)), // Convertit le champ de texte en un LocalDateTime.
+      product = fields(3),
+      price = fields(4).toDouble  // Convertit le champ de texte du prix en un Double.
+    )
+  }
   // Fonction parseOrder: Prend une ligne de texte CSV et tente de la parser en un objet Order.
   // La fonction renvoie un Try[Order], qui sera un Success[Order] si le parsing est réussi,
   // ou un Failure si une exception est levée pendant le processus.
@@ -32,7 +45,7 @@ object Utils {
     )
   }
 
-  // Ajoutez ici d'autres fonctions utilitaires que vous pourriez avoir besoin
+  
 }
 
 

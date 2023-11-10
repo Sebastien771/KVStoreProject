@@ -2,7 +2,7 @@
 import java.nio.file.{Files, Paths, StandardOpenOption}
 import java.time.LocalDateTime
 import scala.util.{Try, Using}
-import ujson._ // ujson est une bibliothèque de JSON pour Scala.
+
 
 // Déclaration de trait CommitLog qui définit l'interface pour les opérations de journalisation.
 trait CommitLog {

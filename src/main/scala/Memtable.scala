@@ -31,6 +31,7 @@ class MemoryMemtable extends Memtable {
   // Implémentation de la méthode 'get' qui cherche une clé et retourne la valeur associée, ou une erreur si non trouvée ou marquée comme supprimée.
   override def get(key: Key): Either[StoreError, Value] =
     records.get(key).filterNot(_.deleted).map(_.value).toRight(StoreError.KeyNotFound(key))
+    
 
   // Implémentation de la méthode 'put' qui ajoute ou met à jour un enregistrement avec la clé et la valeur spécifiées.
   override def put(key: Key, value: Value): Either[StoreError, Unit] = Right {
@@ -41,7 +42,7 @@ class MemoryMemtable extends Memtable {
   override def delete(key: Key): Either[StoreError, Unit] =
     records.get(key) match {
       case Some(record) =>
-        records.update(key, record.copy(deleted = true))
+        records -= key
         Right(())
       case None => Left(StoreError.KeyNotFound(key))
     }

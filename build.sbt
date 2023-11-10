@@ -6,10 +6,10 @@ scalaVersion := "3.3.1" // ou la version que vous utilisez
 
 // Dépendances de votre projet
 libraryDependencies ++= Seq(
-  "com.lihaoyi" %% "upickle" % "1.4.0", // pour le JSON avec uPickle
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2", // si nécessaire pour le parsing
+  "com.lihaoyi" %% "upickle" % "3.1.3", // pour le JSON avec uPickle
+  "com.lihaoyi" %% "fastparse" % "3.0.2", // si nécessaire pour le parsing
   // Ajoutez ici d'autres dépendances dont vous pourriez avoir besoin
-  
+  "org.scalatest" %% "scalatest" % "3.2.15"
 )
 
 // Options de compilation supplémentaires
