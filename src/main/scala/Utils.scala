@@ -6,8 +6,14 @@ import scala.util.Try
 //définition d'un objet scala, 'Utils' qui contiendra des fonctions utilitaires
 object Utils {
   // Déclaration d'une classe de cas `Order` qui représente une commande avec des champs pour l'ID, le client, le timestamp, le produit, et le prix.
-  
-
+  case class Order(
+                    id: String, // L'identifiant unique de la commande
+                    clientId: String, // L'identifiant du client qui a passé la commande
+                    timestamp: LocalDateTime, // L'horodatage de quand la commande a été passée
+                    product: String, // Le produit commandé
+                    price: Double // Le prix de la commande
+                  )
+  // Déclare un objet s
   // Fonction qui transforme une ligne de texte CSV en un objet Order.
   def line2order(line: String): Order = {
     val fields = line.split(",") // Divise la ligne en plusieurs champs en utilisant la virgule comme séparateur.
